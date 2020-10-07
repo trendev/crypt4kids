@@ -1,2 +1,2 @@
-# crypto4kids
-crypto for kids
+# crypt4kids
+cryptography for kids
