@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"os"
-	"strings"
 )
 
 func main() {
-	s := strings.NewReader("Trendev rox")
-	r := rot13Reader{s}
+	reader := bufio.NewReader(os.Stdin)
+	r := rot13Reader{reader}
 	io.Copy(os.Stdout, r)
 }

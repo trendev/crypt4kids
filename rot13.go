@@ -1,6 +1,9 @@
 package main
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 func rot13(b byte) byte {
 	var a, z byte
@@ -21,8 +24,11 @@ type rot13Reader struct {
 
 func (r rot13Reader) Read(p []byte) (n int, err error) {
 	n, err = r.reader.Read(p)
+	if err != nil {
+		return 0, fmt.Errorf("can not read bytes %s : %v", p, err)
+	}
 	for i := 0; i < n; i++ {
 		p[i] = rot13(p[i])
 	}
-	return
+	return n, nil
 }
