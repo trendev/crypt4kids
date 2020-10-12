@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
-	r := rot13Reader{reader}
+	r := rot13Reader{bufio.NewReader(os.Stdin)}
 	io.Copy(os.Stdout, r)
 }
