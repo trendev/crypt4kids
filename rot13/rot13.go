@@ -1,4 +1,4 @@
-package main
+package rot13
 
 import (
 	"fmt"
@@ -18,11 +18,17 @@ func rot13(b byte) byte {
 	return (b-a+13)%(z-a+1) + a
 }
 
-type rot13Reader struct {
+//Reader is a reader encoding with rot13 algorithm
+type Reader struct {
 	reader io.Reader
 }
 
-func (r rot13Reader) Read(p []byte) (n int, err error) {
+//NewReader creates a new Rot13Reader
+func NewReader(reader io.Reader) *Reader {
+	return &Reader{reader}
+}
+
+func (r Reader) Read(p []byte) (n int, err error) {
 	n, err = r.reader.Read(p)
 	if err != nil {
 		if err != io.EOF { // this one is more important than EOF error
