@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -10,9 +11,21 @@ import (
 )
 
 func main() {
-	fmt.Println("Enter your text and it will be translated :")
+	a := flag.String("a", "rot13", "algorithm : \"rot13\" or \"atbash\"")
+	flag.Parse()
+
 	reader := bufio.NewReader(os.Stdin)
-	r := encoding.NewRot13Reader(reader)
+
+	var r *encoding.Reader
+	switch *a {
+	case "atbash":
+		r = encoding.NewAtBashReader(reader)
+	default:
+		r = encoding.NewRot13Reader(reader)
+	}
+
+	fmt.Println("Enter your text and it will be translated :")
+
 	_, err := io.Copy(os.Stdout, r)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error copying from reader to stdout : %v\n", err)
