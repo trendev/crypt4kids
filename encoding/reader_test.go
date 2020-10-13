@@ -6,23 +6,31 @@ import (
 	"testing"
 )
 
-func TestRot13Reader(t *testing.T) {
+func TestReader(t *testing.T) {
 	s := "Trendev Consulting"
-	b := make([]byte, len(s))
-	r := NewRot13Reader(strings.NewReader(s))
-	es := "Geraqri Pbafhygvat"
-
-	_, err := io.ReadFull(r, b)
-	if err != nil {
-		t.Errorf("cannot read from reader to buffer : %v\n", err)
-		t.FailNow()
+	tt := []struct {
+		name   string
+		reader *Reader
+		result string
+	}{
+		{"rot13", NewRot13Reader(strings.NewReader(s)), "Geraqri Pbafhygvat"},
+		{"atbash", NewAtBashReader(strings.NewReader(s)), "Givmwve Xlmhfogrmt"},
 	}
 
-	ds := string(b)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			b := make([]byte, len(s))
+			_, err := io.ReadFull(tc.reader, b)
+			if err != nil {
+				t.Errorf("cannot read from reader to buffer : %v\n", err)
+			}
 
-	if es != ds {
-		t.Errorf("%s should be encoded as %s and not %s", s, es, ds)
-		t.FailNow()
+			ds := string(b)
+
+			if tc.result != ds {
+				t.Errorf("%s should be encoded as %s and not %s", s, tc.result, ds)
+			}
+		})
 	}
 
 }
