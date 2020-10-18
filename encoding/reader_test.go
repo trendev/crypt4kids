@@ -7,14 +7,16 @@ import (
 )
 
 func TestReader(t *testing.T) {
-	s := "Trendev Consulting"
+	s := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	tt := []struct {
 		name   string
 		reader *Reader
 		result string
 	}{
-		{"rot13", NewRot13Reader(strings.NewReader(s)), "Geraqri Pbafhygvat"},
-		{"atbash", NewAtBashReader(strings.NewReader(s)), "Givmwve Xlmhfogrmt"},
+		{"rot13", NewRot13Reader(strings.NewReader(s)), "NOPQRSTUVWXYZABCDEFGHIJKLM"},
+		{"atbash", NewAtBashReader(strings.NewReader(s)), "ZYXWVUTSRQPONMLKJIHGFEDCBA"},
+		{"rot13 + atbash", NewAtBashReader(NewRot13Reader(strings.NewReader(s))), "MLKJIHGFEDCBAZYXWVUTSRQPON"},
+		{"atbash + rot13", NewRot13Reader(NewAtBashReader(strings.NewReader(s))), "MLKJIHGFEDCBAZYXWVUTSRQPON"},
 	}
 
 	for _, tc := range tt {
