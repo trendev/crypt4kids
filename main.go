@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	a := flag.String("a", "rot13", "algorithm : \"rot13\" or \"atbash\"")
+	a := flag.String("alg", "rot13", "algorithm : \"rot13\" or \"atbash\" or \"atbashrot13\" or \"rot13atbash\"")
 	flag.Parse()
 
 	reader := bufio.NewReader(os.Stdin)
@@ -20,6 +20,10 @@ func main() {
 	switch *a {
 	case "atbash":
 		r = encoding.NewAtBashReader(reader)
+	case "atbashrot13":
+		r = encoding.NewRot13Reader(encoding.NewAtBashReader(reader))
+	case "rot13atbash":
+		r = encoding.NewAtBashReader(encoding.NewRot13Reader(reader))
 	default:
 		r = encoding.NewRot13Reader(reader)
 	}
