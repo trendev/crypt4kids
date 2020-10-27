@@ -18,12 +18,12 @@ func (r Reader) Read(p []byte) (n int, err error) {
 		if err != io.EOF { // this one is more important than EOF error
 			return 0, fmt.Errorf("can not read bytes %s : %v", p, err)
 		}
-		return n, err
+		return
 	}
 	for i := 0; i < n; i++ {
 		p[i] = r.fn(p[i])
 	}
-	return n, nil
+	return
 }
 
 //NewRot13Reader creates a new Reader using rot13 algorithm

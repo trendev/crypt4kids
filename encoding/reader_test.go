@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -31,6 +32,48 @@ func TestReader(t *testing.T) {
 
 			if tc.result != ds {
 				t.Errorf("%s should be encoded as %s and not %s", s, tc.result, ds)
+			}
+		})
+	}
+
+}
+
+type eofReader struct{}
+
+func (eofReader) Read(p []byte) (n int, err error) {
+	err = io.EOF
+	return
+}
+
+type errFooReader struct{}
+
+func (errFooReader) Read(p []byte) (n int, err error) {
+	err = errors.New("Foo")
+	return
+}
+
+func TestReaderWithError(t *testing.T) {
+
+	tt := []struct {
+		name   string
+		reader *Reader
+	}{
+		{"eof", &Reader{&eofReader{}, nil}},
+		{"errFoo", &Reader{&errFooReader{}, nil}},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			b := make([]byte, 1)
+			n, err := io.ReadFull(tc.reader, b)
+
+			if err == nil {
+				t.Errorf("An error was expected")
+				t.Failed()
+			}
+
+			if n != 0 {
+				t.Errorf("no bit should have been read : bits read = %v", n)
 			}
 		})
 	}
