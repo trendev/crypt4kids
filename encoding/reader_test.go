@@ -58,8 +58,8 @@ func TestReaderWithError(t *testing.T) {
 		name   string
 		reader *Reader
 	}{
-		{"eof", &Reader{&eofReader{}, nil}},
-		{"errFoo", &Reader{&errFooReader{}, nil}},
+		{"eof", &Reader{reader: &eofReader{}}},
+		{"errFoo", &Reader{reader: &errFooReader{}}},
 	}
 
 	for _, tc := range tt {
