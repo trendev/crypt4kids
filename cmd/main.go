@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/trendev/crypt4kids/encoding"
 )
 
@@ -27,6 +29,15 @@ func main() {
 	default:
 		r = encoding.NewRot13Reader(reader)
 	}
+
+	b := box.New(box.Config{
+		Px:           2,
+		Py:           2,
+		ContentAlign: "Center",
+		Type:         "Double",
+		Color:        "HiCyan",
+	})
+	b.Print("crypt4kids", fmt.Sprintf("Algorithm is %q", strings.ToUpper(*a)))
 
 	fmt.Println("Enter your text and it will be translated :")
 
