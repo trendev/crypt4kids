@@ -47,29 +47,31 @@ func (eofReader) Read(p []byte) (n int, err error) {
 
 type errFooReader struct{}
 
+var errFoo = errors.New("ERRFOO")
+
 func (errFooReader) Read(p []byte) (n int, err error) {
-	err = errors.New("Foo")
+	err = errFoo
 	return
 }
 
 func TestReaderWithError(t *testing.T) {
 
 	tt := []struct {
-		name   string
-		reader *Reader
+		name string
+		r    *Reader
+		e    error
 	}{
-		{"eof", &Reader{reader: &eofReader{}}},
-		{"errFoo", &Reader{reader: &errFooReader{}}},
+		{"EOF", &Reader{reader: &eofReader{}}, io.EOF},
+		{"ERRFOO", &Reader{reader: &errFooReader{}}, errFoo},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			b := make([]byte, 1)
-			n, err := io.ReadFull(tc.reader, b)
+			n, err := io.ReadFull(tc.r, b)
 
-			if err == nil {
-				t.Errorf("An error was expected")
-				t.Failed()
+			if !errors.Is(err, tc.e) {
+				t.Errorf("want %v, got %v", tc.e, err)
 			}
 
 			if n != 0 {

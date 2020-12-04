@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
@@ -15,13 +16,14 @@ func (r Reader) Read(p []byte) (n int, err error) {
 
 	n, err = r.reader.Read(p)
 
-	if err != nil && err != io.EOF {
-		return n, fmt.Errorf("can not read bytes %s : %v", p, err)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return n, fmt.Errorf("can not read bytes %q : %w", p, err)
 	}
 
 	for i := 0; i < n; i++ {
 		p[i] = r.fn(p[i])
 	}
+
 	return
 }
 
