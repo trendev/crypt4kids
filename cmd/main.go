@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/Delta456/box-cli-maker/v2"
-	"github.com/trendev/crypt4kids/encoding"
+	"github.com/trendev/crypt4kids/pkg/encoding"
 )
 
 func main() {
