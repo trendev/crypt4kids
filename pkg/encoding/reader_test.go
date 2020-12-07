@@ -9,9 +9,13 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"testing"
+)
+
+const (
+	pvktype = "RSA PRIVATE KEY"
+	pbktype = "RSA PUBLIC KEY"
 )
 
 func TestReader(t *testing.T) {
@@ -89,7 +93,7 @@ func TestReaderWithError(t *testing.T) {
 
 }
 
-func TestRSAEncryption(t *testing.T) {
+func TestRSA(t *testing.T) {
 	rng := rand.Reader
 
 	pvk, err := rsa.GenerateKey(rng, 2048)
@@ -174,7 +178,7 @@ func TestRSAEncryption(t *testing.T) {
 
 }
 
-func TestStoreRSAKeys(t *testing.T) {
+func TestRSAKeys(t *testing.T) {
 	rng := rand.Reader
 
 	pvk, err := rsa.GenerateKey(rng, 2048)
@@ -186,15 +190,48 @@ func TestStoreRSAKeys(t *testing.T) {
 
 	var pvkbuf, pbkbuf bytes.Buffer
 
-	if err := pem.Encode(&pvkbuf, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pvk)}); err != nil {
+	if err := pem.Encode(&pvkbuf, &pem.Block{Type: pvktype, Bytes: x509.MarshalPKCS1PrivateKey(pvk)}); err != nil {
 		t.Fatalf("can not encode rsa private key in buffer : %v", err)
 	}
 
-	io.Copy(os.Stdout, &pvkbuf)
+	// display rsa private key
+	// io.Copy(os.Stdout, &pvkbuf)
 
-	if err := pem.Encode(&pbkbuf, &pem.Block{Type: "RSA PUBLIC KEY", Bytes: x509.MarshalPKCS1PublicKey(&pbk)}); err != nil {
+	if err := pem.Encode(&pbkbuf, &pem.Block{Type: pbktype, Bytes: x509.MarshalPKCS1PublicKey(&pbk)}); err != nil {
 		t.Fatalf("can not encode rsa public key in buffer : %v", err)
 	}
 
-	io.Copy(os.Stdout, &pbkbuf)
+	// display rsa public key
+	// io.Copy(os.Stdout, &pbkbuf)
+
+	pvkblock, _ := pem.Decode(pvkbuf.Bytes())
+	if pvkblock == nil || pvkblock.Type != pvktype || pvkblock.Bytes == nil {
+		t.Fatalf("can not decode rsa private key from buffer")
+	}
+
+	// loads and controls rsa private key
+	pvk2, err := x509.ParsePKCS1PrivateKey(pvkblock.Bytes)
+	if err != nil {
+		t.Fatalf("can not find valid rsa private key in pem block : %v ", err)
+	}
+
+	if !pvk.Equal(pvk2) {
+		t.Fatalf("loaded key should be equal to original rsa private key")
+	}
+
+	// loads and controls rsa public key
+	pbkblock, _ := pem.Decode(pbkbuf.Bytes())
+	if pbkblock == nil || pbkblock.Type != pbktype || pbkblock.Bytes == nil {
+		t.Fatalf("can not decode rsa public key from buffer")
+	}
+
+	pbk2, err := x509.ParsePKCS1PublicKey(pbkblock.Bytes)
+	if err != nil {
+		t.Fatalf("can not find valid rsa public key in pem block : %v ", err)
+	}
+
+	if !pbk.Equal(pbk2) {
+		t.Fatalf("loaded key should be equal to original rsa public key")
+	}
+
 }
