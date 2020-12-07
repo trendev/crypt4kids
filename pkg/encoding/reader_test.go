@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -169,4 +172,29 @@ func TestRSAEncryption(t *testing.T) {
 		t.Fatalf("decryption of re-encrypted messageand decryped message should be equal")
 	}
 
+}
+
+func TestStoreRSAKeys(t *testing.T) {
+	rng := rand.Reader
+
+	pvk, err := rsa.GenerateKey(rng, 2048)
+	if err != nil {
+		t.Errorf("can not generate RSA Keys : %w", err)
+	}
+
+	pbk := pvk.PublicKey
+
+	var pvkbuf, pbkbuf bytes.Buffer
+
+	if err := pem.Encode(&pvkbuf, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pvk)}); err != nil {
+		t.Fatalf("can not encode rsa private key in buffer : %v", err)
+	}
+
+	io.Copy(os.Stdout, &pvkbuf)
+
+	if err := pem.Encode(&pbkbuf, &pem.Block{Type: "RSA PUBLIC KEY", Bytes: x509.MarshalPKCS1PublicKey(&pbk)}); err != nil {
+		t.Fatalf("can not encode rsa public key in buffer : %v", err)
+	}
+
+	io.Copy(os.Stdout, &pbkbuf)
 }
