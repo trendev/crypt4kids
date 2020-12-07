@@ -16,6 +16,7 @@ import (
 const (
 	pvktype = "RSA PRIVATE KEY"
 	pbktype = "RSA PUBLIC KEY"
+	size    = 2048
 )
 
 func TestReader(t *testing.T) {
@@ -96,7 +97,7 @@ func TestReaderWithError(t *testing.T) {
 func TestRSA(t *testing.T) {
 	rng := rand.Reader
 
-	pvk, err := rsa.GenerateKey(rng, 2048)
+	pvk, err := rsa.GenerateKey(rng, size)
 	if err != nil {
 		t.Errorf("can not generate RSA Keys : %w", err)
 	}
@@ -181,7 +182,7 @@ func TestRSA(t *testing.T) {
 func TestRSAKeys(t *testing.T) {
 	rng := rand.Reader
 
-	pvk, err := rsa.GenerateKey(rng, 2048)
+	pvk, err := rsa.GenerateKey(rng, size)
 	if err != nil {
 		t.Errorf("can not generate RSA Keys : %w", err)
 	}
