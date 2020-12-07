@@ -111,7 +111,11 @@ func TestRSAEncryption(t *testing.T) {
 		label)
 
 	if err != nil {
-		t.Errorf("can not encrypt %q : %w", msg, err)
+		if errors.Is(err, rsa.ErrMessageTooLong) {
+			t.Fatalf("can not encrypt : %v", err)
+		} else {
+			t.Fatalf("can not encrypt %q : %v", msg, err)
+		}
 	}
 
 	dbytes, err := rsa.DecryptOAEP(
@@ -121,11 +125,11 @@ func TestRSAEncryption(t *testing.T) {
 		ebytes,
 		label)
 	if err != nil {
-		t.Errorf("can not decrypt encrypted message : %w", err)
+		t.Fatalf("can not decrypt encrypted message : %v", err)
 	}
 
 	if bytes.Compare(dbytes, msgbytes) != 0 {
-		t.Errorf("want %q, get %q", string(dbytes), msg)
+		t.Fatalf("want %q, get %q", msg, string(dbytes))
 	}
 
 }
