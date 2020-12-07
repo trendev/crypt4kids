@@ -89,7 +89,7 @@ func TestReaderWithError(t *testing.T) {
 func TestRSAEncryption(t *testing.T) {
 	rng := rand.Reader
 
-	pvk, err := rsa.GenerateKey(rng, 4096)
+	pvk, err := rsa.GenerateKey(rng, 2048)
 	if err != nil {
 		t.Errorf("can not generate RSA Keys : %w", err)
 	}
@@ -100,9 +100,10 @@ func TestRSAEncryption(t *testing.T) {
 
 	h := sha256.New()
 
-	msg := "TRENDev rules"
-	msgbytes := []byte(msg)
+	secret := "TRENDev rules"
+	msgbytes := []byte(secret)
 
+	// encrypts the secret message
 	ebytes, err := rsa.EncryptOAEP(
 		h,
 		rng,
@@ -114,10 +115,11 @@ func TestRSAEncryption(t *testing.T) {
 		if errors.Is(err, rsa.ErrMessageTooLong) {
 			t.Fatalf("can not encrypt : %v", err)
 		} else {
-			t.Fatalf("can not encrypt %q : %v", msg, err)
+			t.Fatalf("can not encrypt %q : %v", secret, err)
 		}
 	}
 
+	// decrypts the secret message
 	dbytes, err := rsa.DecryptOAEP(
 		h,
 		rng,
@@ -129,7 +131,42 @@ func TestRSAEncryption(t *testing.T) {
 	}
 
 	if bytes.Compare(dbytes, msgbytes) != 0 {
-		t.Fatalf("want %q, get %q", msg, string(dbytes))
+		t.Fatalf("can not decrypt encrypted message : want %q, get %q", secret, string(dbytes))
+	}
+
+	// encrypts the decrypted message
+	ebytes2, err := rsa.EncryptOAEP(
+		h,
+		rng,
+		&pbk,
+		dbytes,
+		label)
+
+	if err != nil {
+		if errors.Is(err, rsa.ErrMessageTooLong) {
+			t.Fatalf("can not encrypt : %v", err)
+		} else {
+			t.Fatalf("can not encrypt %q : %v", string(dbytes), err)
+		}
+	}
+
+	if bytes.Compare(ebytes, ebytes2) == 0 {
+		t.Fatalf("re-encryption should not provide the same encrypted bytes")
+	}
+
+	// decrypts the re-encrypted message
+	dbytes2, err := rsa.DecryptOAEP(
+		h,
+		rng,
+		pvk,
+		ebytes2,
+		label)
+	if err != nil {
+		t.Fatalf("can not decrypt encrypted message : %v", err)
+	}
+
+	if bytes.Compare(dbytes, dbytes2) != 0 {
+		t.Fatalf("decryption of re-encrypted messageand decryped message should be equal")
 	}
 
 }
