@@ -1,6 +1,10 @@
 package encoding
 
 import (
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"errors"
 	"io"
 	"strings"
@@ -78,6 +82,50 @@ func TestReaderWithError(t *testing.T) {
 				t.Errorf("no bit should have been read : bits read = %v", n)
 			}
 		})
+	}
+
+}
+
+func TestRSAEncryption(t *testing.T) {
+	rng := rand.Reader
+
+	pvk, err := rsa.GenerateKey(rng, 4096)
+	if err != nil {
+		t.Errorf("can not generate RSA Keys : %w", err)
+	}
+
+	pbk := pvk.PublicKey
+
+	label := []byte("lebal")
+
+	h := sha256.New()
+
+	msg := "TRENDev rules"
+	msgbytes := []byte(msg)
+
+	ebytes, err := rsa.EncryptOAEP(
+		h,
+		rng,
+		&pbk,
+		msgbytes,
+		label)
+
+	if err != nil {
+		t.Errorf("can not encrypt %q : %w", msg, err)
+	}
+
+	dbytes, err := rsa.DecryptOAEP(
+		h,
+		rng,
+		pvk,
+		ebytes,
+		label)
+	if err != nil {
+		t.Errorf("can not decrypt encrypted message : %w", err)
+	}
+
+	if bytes.Compare(dbytes, msgbytes) != 0 {
+		t.Errorf("want %q, get %q", string(dbytes), msg)
 	}
 
 }
