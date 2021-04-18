@@ -235,7 +235,7 @@ func TestRSAKeys(t *testing.T) {
 		t.Fatalf("loaded rsa public key should be equal to original rsa public key")
 	}
 
-	// just for fun (or funk...)
+	// just for fun
 	if !pvk.PublicKey.Equal(pbk2) {
 		t.Fatalf("loaded rsa public key should be equal to original rsa public in original private key")
 	}
