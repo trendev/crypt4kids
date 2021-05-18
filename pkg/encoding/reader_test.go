@@ -2,15 +2,20 @@ package encoding
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"io"
 	"strings"
 	"testing"
+
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -239,4 +244,45 @@ func TestRSAKeys(t *testing.T) {
 	if !pvk.PublicKey.Equal(pbk2) {
 		t.Fatalf("loaded rsa public key should be equal to original rsa public in original private key")
 	}
+}
+
+func TestECDSASignature(t *testing.T) {
+	rng := rand.Reader
+	// same strength as RSA 15306 : strong enough ;)
+	pvk, err := ecdsa.GenerateKey(elliptic.P521(), rng)
+	if err != nil {
+		t.Fatalf("cannot generate ECDSA private key : %v ", err)
+	}
+
+	msg := "TRENDev rules"
+	b := []byte(msg)
+
+	h1 := sha512.Sum512_224(b)
+	h2 := sha256.Sum256(b)
+	h3 := sha256.Sum224(b)
+	h4 := sha3.Sum512(b)
+	tt := []struct {
+		name string
+		h    []byte
+	}{
+		{"SHA512-224", h1[:]},
+		{"SHA256", h2[:]},
+		{"SHA224", h3[:]},
+		{"SHA3-512", h4[:]},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+
+			s, err := ecdsa.SignASN1(rng, pvk, tc.h)
+			if err != nil {
+				t.Fatalf("cannot sign %q : %v ", msg, err)
+			}
+
+			if ok := ecdsa.VerifyASN1(&pvk.PublicKey, tc.h, s); !ok {
+				t.Fatalf("ECDSA-%v : signature %x is INVALID ", tc.name, s)
+			}
+		})
+	}
+
 }
