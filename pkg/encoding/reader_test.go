@@ -261,6 +261,7 @@ func TestECDSASignature(t *testing.T) {
 	h2 := sha256.Sum256(b)
 	h3 := sha256.Sum224(b)
 	h4 := sha3.Sum512(b)
+	_ = h4
 	tt := []struct {
 		name string
 		h    []byte
@@ -278,6 +279,8 @@ func TestECDSASignature(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cannot sign %q : %v ", msg, err)
 			}
+
+			t.Logf("ECDSA-%v signature = %x", tc.name, s)
 
 			if ok := ecdsa.VerifyASN1(&pvk.PublicKey, tc.h, s); !ok {
 				t.Fatalf("ECDSA-%v : signature %x is INVALID ", tc.name, s)
