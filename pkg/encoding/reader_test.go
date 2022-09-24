@@ -104,7 +104,8 @@ func TestRSA(t *testing.T) {
 
 	pvk, err := rsa.GenerateKey(rng, size)
 	if err != nil {
-		t.Errorf("can not generate RSA Keys : %w", err)
+		t.Errorf("can not generate RSA Keys : %v", err)
+		t.FailNow()
 	}
 
 	pbk := pvk.PublicKey
@@ -143,7 +144,7 @@ func TestRSA(t *testing.T) {
 		t.Fatalf("can not decrypt encrypted message : %v", err)
 	}
 
-	if bytes.Compare(dbytes, msgbytes) != 0 {
+	if !bytes.Equal(dbytes, msgbytes) {
 		t.Fatalf("can not decrypt encrypted message : want %q, get %q", secret, string(dbytes))
 	}
 
@@ -162,8 +163,7 @@ func TestRSA(t *testing.T) {
 			t.Fatalf("can not encrypt %q : %v", string(dbytes), err)
 		}
 	}
-
-	if bytes.Compare(ebytes, ebytes2) == 0 {
+	if bytes.Equal(ebytes, ebytes2) {
 		t.Fatalf("re-encryption should not provide the same encrypted bytes")
 	}
 
@@ -178,7 +178,7 @@ func TestRSA(t *testing.T) {
 		t.Fatalf("can not decrypt encrypted message : %v", err)
 	}
 
-	if bytes.Compare(dbytes, dbytes2) != 0 {
+	if !bytes.Equal(dbytes, dbytes2) {
 		t.Fatalf("decryption of re-encrypted messageand decryped message should be equal")
 	}
 
@@ -189,7 +189,8 @@ func TestRSAKeys(t *testing.T) {
 
 	pvk, err := rsa.GenerateKey(rng, size)
 	if err != nil {
-		t.Errorf("can not generate RSA Keys : %w", err)
+		t.Errorf("can not generate RSA Keys : %v", err)
+		t.Failed()
 	}
 
 	pbk := pvk.PublicKey
