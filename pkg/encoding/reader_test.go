@@ -305,6 +305,7 @@ func TestAtBash(t *testing.T) {
 		{'m', 'n'},
 		{'K', 'P'},
 		{'M', 'N'},
+		{'1', '1'},
 	}
 
 	for _, tc := range tt {
@@ -331,6 +332,7 @@ func TestRot13(t *testing.T) {
 		{'m', 'z'},
 		{'M', 'Z'},
 		{'A', 'N'},
+		{'1', '1'},
 	}
 
 	for _, tc := range tt {
