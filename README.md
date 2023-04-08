@@ -1,22 +1,29 @@
 # crypt4kids
-A basic crypto tool for kids
+A simple crypto tool for kids :books:
 
-> ## :hand:  code used during our Go's workshops
+## :zap: Run (using golang)
 
-### Test
-
-Clone the repo and execute the following command :
+Clone the repo and execute the following command:
 
 `go run ./cmd` 
 
-... and you can enter the text to translate, using ROT13 algorithm :
+... and you can enter the text to translate, using `rot13` algorithm:
 
 `Trendev rox`
 
-should give :
+should give:
 
 `Geraqri ebk`
 
-:kissing: 
+## :rocket: Run (using docker)
+Just run:
 
-Set the `-alg` flag if you want to change the algorithm and `-h` if you want to get the command usage.
+`docker run -it --rm ghcr.io/trendev/crypt4kids`
+
+## :sweat_smile: Need Help ?
+Run the following command if you need to get app usage:
+
+`docker run -it --rm ghcr.io/trendev/crypt4kids -h`
+
+You can set the `-alg` flag if you want to change the algorithm. `rot13` or `atbash` or `atbashrot13` or `rot13atbash` are supported and **`rot13` is default one**.
+
