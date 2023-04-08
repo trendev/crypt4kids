@@ -303,6 +303,8 @@ func TestAtBash(t *testing.T) {
 		{'f', 'u'},
 		{'k', 'p'},
 		{'m', 'n'},
+		{'K', 'P'},
+		{'M', 'N'},
 	}
 
 	for _, tc := range tt {
@@ -310,6 +312,32 @@ func TestAtBash(t *testing.T) {
 			got := atbash(tc.b)
 			if got != tc.r {
 				t.Errorf("atbash(%c) == %c, got %c", tc.b, tc.r, got)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestRot13(t *testing.T) {
+	tt := []struct {
+		b, r byte
+	}{
+		{'a', 'n'},
+		{'z', 'm'},
+		{'b', 'o'},
+		{'y', 'l'},
+		{'f', 's'},
+		{'k', 'x'},
+		{'m', 'z'},
+		{'M', 'Z'},
+		{'A', 'N'},
+	}
+
+	for _, tc := range tt {
+		t.Run(fmt.Sprintf("%c", tc.b), func(t *testing.T) {
+			got := rot13(tc.b)
+			if got != tc.r {
+				t.Errorf("rot13(%c) == %c, got %c", tc.b, tc.r, got)
 				t.FailNow()
 			}
 		})
