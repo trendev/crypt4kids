@@ -1,4 +1,8 @@
 # crypt4kids
+[![Test, Build and Save](https://github.com/trendev/crypt4kids/actions/workflows/build.yml/badge.svg)](https://github.com/trendev/crypt4kids/actions/workflows/build.yml)
+
+[![codecov](https://codecov.io/gh/trendev/crypt4kids/branch/main/graph/badge.svg?token=B8BATGUXMS)](https://codecov.io/gh/trendev/crypt4kids)
+
 A simple crypto tool for kids :books:
 
 ## :zap: Run (using golang)
