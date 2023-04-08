@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -289,4 +290,28 @@ func TestECDSASignature(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAtBash(t *testing.T) {
+	tt := []struct {
+		b, r byte
+	}{
+		{'a', 'z'},
+		{'z', 'a'},
+		{'b', 'y'},
+		{'y', 'b'},
+		{'f', 'u'},
+		{'k', 'p'},
+		{'m', 'n'},
+	}
+
+	for _, tc := range tt {
+		t.Run(fmt.Sprintf("%c", tc.b), func(t *testing.T) {
+			got := atbash(tc.b)
+			if got != tc.r {
+				t.Errorf("atbash(%c) == %c, got %c", tc.b, tc.r, got)
+				t.FailNow()
+			}
+		})
+	}
 }
