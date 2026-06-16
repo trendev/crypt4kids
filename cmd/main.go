@@ -38,7 +38,7 @@ func run(stdin io.Reader, stdout, stderr io.Writer, args []string) int {
 
 	effectiveAlg := normalizeAlgorithm(*alg)
 	if shouldRunArcade(stdin, stdout, *plain) {
-		return runArcade(stdin, stdout, stderr, effectiveAlg, supportsANSI(stdout))
+		return runArcade(stdin, stdout, stderr, effectiveAlg)
 	}
 
 	return runPlain(stdin, stdout, stderr, effectiveAlg)
@@ -106,17 +106,6 @@ func shouldRunArcade(stdin io.Reader, stdout io.Writer, forcePlain bool) bool {
 	}
 
 	return isTerminal(stdin) && isTerminal(stdout)
-}
-
-func supportsANSI(stdout io.Writer) bool {
-	if !isTerminal(stdout) {
-		return false
-	}
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
-		return false
-	}
-
-	return true
 }
 
 func isTerminal(value any) bool {

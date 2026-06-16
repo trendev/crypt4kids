@@ -13,15 +13,25 @@ Clone the repo and execute the following command:
 go run ./cmd
 ```
 
-When stdin and stdout are connected to a terminal, crypt4kids starts in arcade mode.
+When stdin and stdout are connected to a terminal, crypt4kids starts in a full-screen cyberpunk arcade mode powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss).
+
+The arcade mode renders a neon 8-bit terminal cabinet with pixel-art city graphics, cartridge-style algorithm buttons, a plaintext panel, and a cipher output panel.
 
 Arcade controls:
 
 - `1`, `2`, `3`, `4`: select an algorithm
-- `t`: enter or change the text
-- `e`: encrypt the text
+- `t`: enter type mode
+- `Enter`: leave type mode, or encrypt from command mode
+- `e`: encrypt from command mode
 - `c`: clear the text and output
 - `q`: quit
+
+Type mode controls:
+
+- regular text keys: edit the plaintext buffer
+- left/right arrows: move the input cursor
+- `Backspace` / `Delete`: edit text
+- `Esc`: leave type mode without encrypting
 
 You can also use crypt4kids as a plain stdin/stdout tool:
 

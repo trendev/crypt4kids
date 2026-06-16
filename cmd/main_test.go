@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 func TestRunAlgorithms(t *testing.T) {
@@ -130,30 +132,6 @@ func TestRunCopyError(t *testing.T) {
 	}
 }
 
-func TestRunInteractiveTerminalUsesArcade(t *testing.T) {
-	stdin := terminalInput{Reader: strings.NewReader("q\n")}
-	var stdout terminalBuffer
-	var stderr bytes.Buffer
-
-	code := run(stdin, &stdout, &stderr, nil)
-
-	if code != 0 {
-		t.Fatalf("run() code = %d, want 0; stderr = %q", code, stderr.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("stderr = %q, want empty", stderr.String())
-	}
-	if !strings.Contains(stdout.String(), "C I P H E R  A R C A D E") {
-		t.Fatalf("stdout = %q, want arcade screen", stdout.String())
-	}
-	if strings.Contains(stdout.String(), "Enter your text and it will be translated:") {
-		t.Fatalf("stdout = %q, want arcade mode instead of plain prompt", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), "GAME OVER") {
-		t.Fatalf("stdout = %q, want quit message", stdout.String())
-	}
-}
-
 func TestRunPlainFlagForcesStreamingWithTerminal(t *testing.T) {
 	stdin := terminalInput{Reader: strings.NewReader("ABC\n")}
 	var stdout terminalBuffer
@@ -175,56 +153,85 @@ func TestRunPlainFlagForcesStreamingWithTerminal(t *testing.T) {
 	}
 }
 
-func TestRunArcadeEncryptFlow(t *testing.T) {
-	stdin := strings.NewReader("2\nt\nABC xyz 123\ne\nq\n")
-	var stdout, stderr bytes.Buffer
+func TestShouldRunArcadeForInteractiveTerminal(t *testing.T) {
+	stdin := terminalInput{Reader: strings.NewReader("")}
+	var stdout terminalBuffer
 
-	code := runArcade(stdin, &stdout, &stderr, "rot13", false)
-
-	if code != 0 {
-		t.Fatalf("runArcade() code = %d, want 0; stderr = %q", code, stderr.String())
+	if !shouldRunArcade(stdin, &stdout, false) {
+		t.Fatal("shouldRunArcade() = false, want true for terminal stdin/stdout")
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("stderr = %q, want empty", stderr.String())
+	if shouldRunArcade(stdin, &stdout, true) {
+		t.Fatal("shouldRunArcade() = true, want false when plain mode is forced")
 	}
-	if !strings.Contains(stdout.String(), "ACTIVE ALGORITHM: ATBASH") {
-		t.Fatalf("stdout = %q, want selected algorithm", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), "OUTPUT: ZYX cba 123") {
-		t.Fatalf("stdout = %q, want encrypted output", stdout.String())
+	if shouldRunArcade(strings.NewReader("ABC"), &stdout, false) {
+		t.Fatal("shouldRunArcade() = true, want false for piped stdin")
 	}
 }
 
-func TestRunArcadeClear(t *testing.T) {
-	stdin := strings.NewReader("t\nABC\ne\nc\nq\n")
-	var stdout, stderr bytes.Buffer
+func TestArcadeModelEncryptFlow(t *testing.T) {
+	model := newCyberpunkArcadeModel("rot13")
+	model = updateArcadeModel(t, model, textKey("2"))
+	model = updateArcadeModel(t, model, textKey("t"))
+	for _, r := range "ABC xyz 123" {
+		model = updateArcadeModel(t, model, textKey(string(r)))
+	}
+	model = updateArcadeModel(t, model, codeKey(tea.KeyEnter))
+	model = updateArcadeModel(t, model, textKey("e"))
 
-	code := runArcade(stdin, &stdout, &stderr, "rot13", false)
+	if model.algorithm != "atbash" {
+		t.Fatalf("model.algorithm = %q, want atbash", model.algorithm)
+	}
+	if got, want := string(model.input), "ABC xyz 123"; got != want {
+		t.Fatalf("model.input = %q, want %q", got, want)
+	}
+	if !model.hasOutput {
+		t.Fatal("model.hasOutput = false, want true")
+	}
+	if got, want := model.output, "ZYX cba 123"; got != want {
+		t.Fatalf("model.output = %q, want %q", got, want)
+	}
+	if model.mode != arcadeModeCommand {
+		t.Fatalf("model.mode = %v, want command mode", model.mode)
+	}
+}
 
-	if code != 0 {
-		t.Fatalf("runArcade() code = %d, want 0; stderr = %q", code, stderr.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("stderr = %q, want empty", stderr.String())
-	}
+func TestArcadeModelClear(t *testing.T) {
+	model := newCyberpunkArcadeModel("rot13")
+	model.input = []rune("ABC")
+	model.cursor = len(model.input)
+	model.output = "NOP"
+	model.hasOutput = true
 
-	got := stdout.String()
-	lastLoadedInput := strings.LastIndex(got, "INPUT : ABC")
-	lastEmptyInput := strings.LastIndex(got, "INPUT : <empty>")
-	if lastLoadedInput == -1 {
-		t.Fatalf("stdout = %q, want loaded input before clear", got)
-	}
-	if lastEmptyInput <= lastLoadedInput {
-		t.Fatalf("stdout = %q, want empty input after clear", got)
-	}
+	model = updateArcadeModel(t, model, textKey("c"))
 
-	lastEncryptedOutput := strings.LastIndex(got, "OUTPUT: NOP")
-	lastWaitingOutput := strings.LastIndex(got, "OUTPUT: <waiting for encrypt>")
-	if lastEncryptedOutput == -1 {
-		t.Fatalf("stdout = %q, want encrypted output before clear", got)
+	if string(model.input) != "" {
+		t.Fatalf("model.input = %q, want empty", string(model.input))
 	}
-	if lastWaitingOutput <= lastEncryptedOutput {
-		t.Fatalf("stdout = %q, want waiting output after clear", got)
+	if model.output != "" {
+		t.Fatalf("model.output = %q, want empty", model.output)
+	}
+	if model.hasOutput {
+		t.Fatal("model.hasOutput = true, want false")
+	}
+	if model.status != "BUFFER PURGED" {
+		t.Fatalf("model.status = %q, want clear status", model.status)
+	}
+}
+
+func TestArcadeModelViewHasCyberpunkPixelArt(t *testing.T) {
+	model := newCyberpunkArcadeModel("rot13")
+	content := model.View().Content
+
+	for _, want := range []string{
+		"CRYPT4KIDS // CYBER ARCADE",
+		"NEON CITY",
+		"PLAINTEXT TERMINAL",
+		"CIPHER OUTPUT",
+		"[1] ROT13",
+	} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("view content = %q, want to contain %q", content, want)
+		}
 	}
 }
 
@@ -329,6 +336,35 @@ func mustClose(t *testing.T, c io.Closer) {
 	if err := c.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
+}
+
+func updateArcadeModel(t *testing.T, model cyberpunkArcadeModel, msg tea.Msg) cyberpunkArcadeModel {
+	t.Helper()
+
+	updated, _ := model.Update(msg)
+	next, ok := updated.(cyberpunkArcadeModel)
+	if !ok {
+		t.Fatalf("Update() returned %T, want cyberpunkArcadeModel", updated)
+	}
+
+	return next
+}
+
+func textKey(text string) tea.KeyPressMsg {
+	runes := []rune(text)
+	code := tea.KeyExtended
+	if len(runes) == 1 {
+		code = runes[0]
+	}
+	if text == " " {
+		code = tea.KeySpace
+	}
+
+	return tea.KeyPressMsg(tea.Key{Text: text, Code: code})
+}
+
+func codeKey(code rune) tea.KeyPressMsg {
+	return tea.KeyPressMsg(tea.Key{Code: code})
 }
 
 type terminalInput struct {
