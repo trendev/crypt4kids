@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunAlgorithms(t *testing.T) {
@@ -89,6 +90,9 @@ func TestRunHelp(t *testing.T) {
 	if !strings.Contains(stdout.String(), "Usage of crypt4kids:") {
 		t.Fatalf("stdout = %q, want usage", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "-plain") {
+		t.Fatalf("stdout = %q, want -plain flag", stdout.String())
+	}
 }
 
 func TestRunFlagError(t *testing.T) {
@@ -123,6 +127,104 @@ func TestRunCopyError(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "error copying from reader to stdout") {
 		t.Fatalf("stderr = %q, want copy error", stderr.String())
+	}
+}
+
+func TestRunInteractiveTerminalUsesArcade(t *testing.T) {
+	stdin := terminalInput{Reader: strings.NewReader("q\n")}
+	var stdout terminalBuffer
+	var stderr bytes.Buffer
+
+	code := run(stdin, &stdout, &stderr, nil)
+
+	if code != 0 {
+		t.Fatalf("run() code = %d, want 0; stderr = %q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "C I P H E R  A R C A D E") {
+		t.Fatalf("stdout = %q, want arcade screen", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "Enter your text and it will be translated:") {
+		t.Fatalf("stdout = %q, want arcade mode instead of plain prompt", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "GAME OVER") {
+		t.Fatalf("stdout = %q, want quit message", stdout.String())
+	}
+}
+
+func TestRunPlainFlagForcesStreamingWithTerminal(t *testing.T) {
+	stdin := terminalInput{Reader: strings.NewReader("ABC\n")}
+	var stdout terminalBuffer
+	var stderr bytes.Buffer
+
+	code := run(stdin, &stdout, &stderr, []string{"-plain", "-alg", "atbash"})
+
+	if code != 0 {
+		t.Fatalf("run() code = %d, want 0; stderr = %q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `Algorithm is "ATBASH"`) {
+		t.Fatalf("stdout = %q, want atbash plain mode", stdout.String())
+	}
+	if !strings.HasSuffix(stdout.String(), "ZYX\n") {
+		t.Fatalf("stdout = %q, want atbash output", stdout.String())
+	}
+}
+
+func TestRunArcadeEncryptFlow(t *testing.T) {
+	stdin := strings.NewReader("2\nt\nABC xyz 123\ne\nq\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runArcade(stdin, &stdout, &stderr, "rot13", false)
+
+	if code != 0 {
+		t.Fatalf("runArcade() code = %d, want 0; stderr = %q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "ACTIVE ALGORITHM: ATBASH") {
+		t.Fatalf("stdout = %q, want selected algorithm", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "OUTPUT: ZYX cba 123") {
+		t.Fatalf("stdout = %q, want encrypted output", stdout.String())
+	}
+}
+
+func TestRunArcadeClear(t *testing.T) {
+	stdin := strings.NewReader("t\nABC\ne\nc\nq\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runArcade(stdin, &stdout, &stderr, "rot13", false)
+
+	if code != 0 {
+		t.Fatalf("runArcade() code = %d, want 0; stderr = %q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	got := stdout.String()
+	lastLoadedInput := strings.LastIndex(got, "INPUT : ABC")
+	lastEmptyInput := strings.LastIndex(got, "INPUT : <empty>")
+	if lastLoadedInput == -1 {
+		t.Fatalf("stdout = %q, want loaded input before clear", got)
+	}
+	if lastEmptyInput <= lastLoadedInput {
+		t.Fatalf("stdout = %q, want empty input after clear", got)
+	}
+
+	lastEncryptedOutput := strings.LastIndex(got, "OUTPUT: NOP")
+	lastWaitingOutput := strings.LastIndex(got, "OUTPUT: <waiting for encrypt>")
+	if lastEncryptedOutput == -1 {
+		t.Fatalf("stdout = %q, want encrypted output before clear", got)
+	}
+	if lastWaitingOutput <= lastEncryptedOutput {
+		t.Fatalf("stdout = %q, want waiting output after clear", got)
 	}
 }
 
@@ -227,4 +329,48 @@ func mustClose(t *testing.T, c io.Closer) {
 	if err := c.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
+}
+
+type terminalInput struct {
+	*strings.Reader
+}
+
+func (terminalInput) Stat() (os.FileInfo, error) {
+	return fakeFileInfo{mode: os.ModeCharDevice}, nil
+}
+
+type terminalBuffer struct {
+	bytes.Buffer
+}
+
+func (*terminalBuffer) Stat() (os.FileInfo, error) {
+	return fakeFileInfo{mode: os.ModeCharDevice}, nil
+}
+
+type fakeFileInfo struct {
+	mode os.FileMode
+}
+
+func (f fakeFileInfo) Name() string {
+	return "tty"
+}
+
+func (f fakeFileInfo) Size() int64 {
+	return 0
+}
+
+func (f fakeFileInfo) Mode() os.FileMode {
+	return f.mode
+}
+
+func (f fakeFileInfo) ModTime() time.Time {
+	return time.Time{}
+}
+
+func (f fakeFileInfo) IsDir() bool {
+	return false
+}
+
+func (f fakeFileInfo) Sys() any {
+	return nil
 }

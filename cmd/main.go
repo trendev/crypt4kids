@@ -23,6 +23,7 @@ func run(stdin io.Reader, stdout, stderr io.Writer, args []string) int {
 	flags.SetOutput(io.Discard)
 
 	alg := flags.String("alg", "rot13", `algorithm: "rot13", "atbash", "atbashrot13", or "rot13atbash"`)
+	plain := flags.Bool("plain", false, "use plain stdin/stdout mode instead of the arcade interface")
 	flags.Usage = func() {}
 
 	if err := flags.Parse(args); err != nil {
@@ -35,12 +36,20 @@ func run(stdin io.Reader, stdout, stderr io.Writer, args []string) int {
 		return 2
 	}
 
-	reader := bufio.NewReader(stdin)
 	effectiveAlg := normalizeAlgorithm(*alg)
-	r := newAlgorithmReader(effectiveAlg, reader)
+	if shouldRunArcade(stdin, stdout, *plain) {
+		return runArcade(stdin, stdout, stderr, effectiveAlg, supportsANSI(stdout))
+	}
+
+	return runPlain(stdin, stdout, stderr, effectiveAlg)
+}
+
+func runPlain(stdin io.Reader, stdout, stderr io.Writer, alg string) int {
+	reader := bufio.NewReader(stdin)
+	r := newAlgorithmReader(alg, reader)
 
 	fmt.Fprintln(stdout, "crypt4kids")
-	fmt.Fprintf(stdout, "Algorithm is %q\n\n", strings.ToUpper(effectiveAlg))
+	fmt.Fprintf(stdout, "Algorithm is %q\n\n", algorithmDisplayName(alg))
 	fmt.Fprintln(stdout, "Enter your text and it will be translated:")
 
 	if _, err := io.Copy(stdout, r); err != nil {
@@ -55,6 +64,8 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage of crypt4kids:")
 	fmt.Fprintln(w, `  -alg string`)
 	fmt.Fprintln(w, `        algorithm: "rot13", "atbash", "atbashrot13", or "rot13atbash" (default "rot13")`)
+	fmt.Fprintln(w, `  -plain`)
+	fmt.Fprintln(w, `        use plain stdin/stdout mode instead of the arcade interface`)
 }
 
 func normalizeAlgorithm(alg string) string {
@@ -64,6 +75,16 @@ func normalizeAlgorithm(alg string) string {
 	default:
 		return "rot13"
 	}
+}
+
+func algorithmDisplayName(alg string) string {
+	return strings.ToUpper(normalizeAlgorithm(alg))
+}
+
+func encodeString(alg, text string) string {
+	var out strings.Builder
+	_, _ = io.Copy(&out, newAlgorithmReader(alg, strings.NewReader(text)))
+	return out.String()
 }
 
 func newAlgorithmReader(alg string, reader io.Reader) io.Reader {
@@ -77,4 +98,39 @@ func newAlgorithmReader(alg string, reader io.Reader) io.Reader {
 	default:
 		return encoding.NewRot13Reader(reader)
 	}
+}
+
+func shouldRunArcade(stdin io.Reader, stdout io.Writer, forcePlain bool) bool {
+	if forcePlain {
+		return false
+	}
+
+	return isTerminal(stdin) && isTerminal(stdout)
+}
+
+func supportsANSI(stdout io.Writer) bool {
+	if !isTerminal(stdout) {
+		return false
+	}
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+		return false
+	}
+
+	return true
+}
+
+func isTerminal(value any) bool {
+	file, ok := value.(interface {
+		Stat() (os.FileInfo, error)
+	})
+	if !ok {
+		return false
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeCharDevice != 0
 }

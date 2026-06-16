@@ -9,25 +9,74 @@ A simple crypto tool for kids :books:
 
 Clone the repo and execute the following command:
 
-`go run ./cmd` 
+```sh
+go run ./cmd
+```
 
-... and you can enter the text to translate, using `rot13` algorithm:
+When stdin and stdout are connected to a terminal, crypt4kids starts in arcade mode.
 
-`Trendev rox`
+Arcade controls:
 
-should give:
+- `1`, `2`, `3`, `4`: select an algorithm
+- `t`: enter or change the text
+- `e`: encrypt the text
+- `c`: clear the text and output
+- `q`: quit
 
-`Geraqri ebk`
+You can also use crypt4kids as a plain stdin/stdout tool:
+
+```sh
+printf 'Trendev rox\n' | go run ./cmd
+```
+
+Using the default `rot13` algorithm, this prints:
+
+```text
+crypt4kids
+Algorithm is "ROT13"
+
+Enter your text and it will be translated:
+Geraqri ebk
+```
+
+To force plain mode while running from an interactive terminal:
+
+```sh
+go run ./cmd -plain
+```
+
+When using `-plain` interactively, press `Ctrl-D` to finish the input stream.
 
 ## :rocket: Run (using docker)
+
 Just run:
 
-`docker run -it --rm ghcr.io/trendev/crypt4kids`
+```sh
+docker run -it --rm ghcr.io/trendev/crypt4kids
+```
+
+For plain streaming mode:
+
+```sh
+printf 'Trendev rox\n' | docker run -i --rm ghcr.io/trendev/crypt4kids
+```
 
 ## :sweat_smile: Need Help ?
+
 Run the following command if you need to get app usage:
 
-`docker run -it --rm ghcr.io/trendev/crypt4kids -h`
+```sh
+docker run -it --rm ghcr.io/trendev/crypt4kids -h
+```
 
-You can set the `-alg` flag if you want to change the algorithm. `rot13` or `atbash` or `atbashrot13` or `rot13atbash` are supported and **`rot13` is default one**.
+Available flags:
 
+- `-alg`: set the algorithm. Supported values are `rot13`, `atbash`, `atbashrot13`, and `rot13atbash`. The default is `rot13`.
+- `-plain`: use the line-oriented stdin/stdout interface instead of arcade mode.
+
+Examples:
+
+```sh
+go run ./cmd -alg atbash
+printf 'ABC xyz 123\n' | go run ./cmd -alg atbash
+```
