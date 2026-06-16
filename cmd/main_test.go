@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -94,6 +97,12 @@ func TestRunHelp(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "-plain") {
 		t.Fatalf("stdout = %q, want -plain flag", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "-web") {
+		t.Fatalf("stdout = %q, want -web flag", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "-addr") {
+		t.Fatalf("stdout = %q, want -addr flag", stdout.String())
 	}
 }
 
@@ -235,6 +244,102 @@ func TestArcadeModelViewHasCyberpunkPixelArt(t *testing.T) {
 	}
 }
 
+func TestWebStaticFiles(t *testing.T) {
+	handler := newTestWebHandler(t)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("GET / status = %d, want %d", response.Code, http.StatusOK)
+	}
+	body := response.Body.String()
+	for _, want := range []string{
+		"CRYPT4KIDS",
+		"/assets/operators.svg",
+		"/assets/security-room.svg",
+		"/app.js",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("GET / body = %q, want to contain %q", body, want)
+		}
+	}
+
+	response = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodGet, "/assets/operators.svg", nil)
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("GET /assets/operators.svg status = %d, want %d", response.Code, http.StatusOK)
+	}
+	if !strings.Contains(response.Body.String(), "<svg") {
+		t.Fatalf("asset body = %q, want svg", response.Body.String())
+	}
+}
+
+func TestWebAlgorithmsEndpoint(t *testing.T) {
+	handler := newTestWebHandler(t)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/algorithms", nil)
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("GET /api/algorithms status = %d, want %d", response.Code, http.StatusOK)
+	}
+
+	var algorithms []algorithmResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &algorithms); err != nil {
+		t.Fatalf("Unmarshal() error = %v; body = %q", err, response.Body.String())
+	}
+	if len(algorithms) != 4 {
+		t.Fatalf("len(algorithms) = %d, want 4", len(algorithms))
+	}
+	if algorithms[0].Key != "rot13" || algorithms[1].Key != "atbash" {
+		t.Fatalf("algorithms = %+v, want canonical order", algorithms)
+	}
+}
+
+func TestWebEncryptEndpoint(t *testing.T) {
+	handler := newTestWebHandler(t)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/api/encrypt",
+		strings.NewReader(`{"algorithm":"atbash","text":"ABC xyz 123"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("POST /api/encrypt status = %d, want %d; body = %q", response.Code, http.StatusOK, response.Body.String())
+	}
+
+	var payload encryptResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("Unmarshal() error = %v; body = %q", err, response.Body.String())
+	}
+	if payload.Algorithm != "atbash" {
+		t.Fatalf("payload.Algorithm = %q, want atbash", payload.Algorithm)
+	}
+	if payload.Ciphertext != "ZYX cba 123" {
+		t.Fatalf("payload.Ciphertext = %q, want encrypted text", payload.Ciphertext)
+	}
+}
+
+func TestWebEncryptEndpointRejectsBadInput(t *testing.T) {
+	handler := newTestWebHandler(t)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/encrypt", strings.NewReader(`{`))
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("POST /api/encrypt status = %d, want %d", response.Code, http.StatusBadRequest)
+	}
+}
+
 func TestMain(t *testing.T) {
 	stdin := tempInputFile(t, "ABC")
 	stdoutReader, stdoutWriter := pipe(t)
@@ -365,6 +470,17 @@ func textKey(text string) tea.KeyPressMsg {
 
 func codeKey(code rune) tea.KeyPressMsg {
 	return tea.KeyPressMsg(tea.Key{Code: code})
+}
+
+func newTestWebHandler(t *testing.T) http.Handler {
+	t.Helper()
+
+	handler, err := newWebHandler()
+	if err != nil {
+		t.Fatalf("newWebHandler() error = %v", err)
+	}
+
+	return handler
 }
 
 type terminalInput struct {

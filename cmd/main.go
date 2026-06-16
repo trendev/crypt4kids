@@ -24,6 +24,8 @@ func run(stdin io.Reader, stdout, stderr io.Writer, args []string) int {
 
 	alg := flags.String("alg", "rot13", `algorithm: "rot13", "atbash", "atbashrot13", or "rot13atbash"`)
 	plain := flags.Bool("plain", false, "use plain stdin/stdout mode instead of the arcade interface")
+	web := flags.Bool("web", false, "serve the browser arcade interface")
+	addr := flags.String("addr", "127.0.0.1:8787", "address for the browser arcade server")
 	flags.Usage = func() {}
 
 	if err := flags.Parse(args); err != nil {
@@ -37,6 +39,9 @@ func run(stdin io.Reader, stdout, stderr io.Writer, args []string) int {
 	}
 
 	effectiveAlg := normalizeAlgorithm(*alg)
+	if *web {
+		return runWeb(stdout, stderr, *addr)
+	}
 	if shouldRunArcade(stdin, stdout, *plain) {
 		return runArcade(stdin, stdout, stderr, effectiveAlg)
 	}
@@ -64,8 +69,12 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage of crypt4kids:")
 	fmt.Fprintln(w, `  -alg string`)
 	fmt.Fprintln(w, `        algorithm: "rot13", "atbash", "atbashrot13", or "rot13atbash" (default "rot13")`)
+	fmt.Fprintln(w, `  -addr string`)
+	fmt.Fprintln(w, `        address for the browser arcade server (default "127.0.0.1:8787")`)
 	fmt.Fprintln(w, `  -plain`)
 	fmt.Fprintln(w, `        use plain stdin/stdout mode instead of the arcade interface`)
+	fmt.Fprintln(w, `  -web`)
+	fmt.Fprintln(w, `        serve the browser arcade interface`)
 }
 
 func normalizeAlgorithm(alg string) string {

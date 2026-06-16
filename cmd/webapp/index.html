@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>crypt4kids // cipher arcade</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <canvas id="wire-canvas" aria-hidden="true"></canvas>
+    <img class="security-room" src="/assets/security-room.svg" alt="" />
+
+    <main class="arcade-shell" aria-labelledby="game-title">
+      <section class="operator-column" aria-label="Operator">
+        <div class="portrait-monitor">
+          <img src="/assets/operators.svg" alt="Three pixel-art cyber security operator portraits" />
+        </div>
+        <div class="mission-panel" aria-live="polite">
+          <div class="panel-title">MISSION FEED</div>
+          <p id="mission-status">AGENT LINK READY</p>
+          <div class="meter-row">
+            <span>LOCK</span>
+            <span class="meter"><span id="lock-meter"></span></span>
+          </div>
+          <div class="meter-row">
+            <span>VAULT</span>
+            <span class="meter"><span id="vault-meter"></span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="cipher-cabinet" aria-label="Cipher arcade">
+        <header class="cabinet-header">
+          <span class="lamp lamp-red"></span>
+          <div>
+            <p class="eyebrow">16-BIT SECURITY TERMINAL</p>
+            <h1 id="game-title">CRYPT4KIDS</h1>
+          </div>
+          <span class="lamp lamp-green"></span>
+        </header>
+
+        <section class="crt-screen" aria-label="Encryption terminal">
+          <div class="scanlines" aria-hidden="true"></div>
+          <div class="terminal-grid">
+            <label class="terminal-panel plaintext-panel">
+              <span>PLAINTEXT</span>
+              <textarea id="plaintext" spellcheck="false" maxlength="600">Trendev rox</textarea>
+            </label>
+
+            <div class="terminal-panel output-panel">
+              <span>CIPHER OUTPUT</span>
+              <pre id="cipher-output" aria-live="polite">READY_</pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="cartridge-rack" aria-label="Cipher cartridges">
+          <button class="cartridge active" type="button" data-algorithm="rot13">
+            <span>01</span>
+            ROT13
+          </button>
+          <button class="cartridge" type="button" data-algorithm="atbash">
+            <span>02</span>
+            ATBASH
+          </button>
+          <button class="cartridge" type="button" data-algorithm="atbashrot13">
+            <span>03</span>
+            A+B
+          </button>
+          <button class="cartridge" type="button" data-algorithm="rot13atbash">
+            <span>04</span>
+            B+A
+          </button>
+        </section>
+
+        <section class="control-deck" aria-label="Controls">
+          <button id="encrypt-button" class="action-button primary" type="button">ENCRYPT</button>
+          <button id="copy-button" class="action-button" type="button">COPY</button>
+          <button id="clear-button" class="action-button danger" type="button">CLEAR</button>
+        </section>
+      </section>
+
+      <section class="security-column" aria-label="Security display">
+        <div class="vault-card">
+          <div class="panel-title">VAULT CAM</div>
+          <div class="vault-door" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p id="algorithm-readout">ROT13 CARTRIDGE</p>
+        </div>
+        <div class="signal-card">
+          <div class="panel-title">SIGNAL</div>
+          <div class="signal-bars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p>LOCAL LINK</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
