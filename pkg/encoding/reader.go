@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-//Reader is a reader encoding with a specific algorithm
+// Reader is a reader encoding with a specific algorithm
 type Reader struct {
 	reader io.Reader
 	fn     func(b byte) byte
@@ -16,23 +16,23 @@ func (r Reader) Read(p []byte) (n int, err error) {
 
 	n, err = r.reader.Read(p)
 
-	if err != nil && !errors.Is(err, io.EOF) {
-		return n, fmt.Errorf("can not read bytes %q : %w", p, err)
-	}
-
 	for i := 0; i < n; i++ {
 		p[i] = r.fn(p[i])
+	}
+
+	if err != nil && !errors.Is(err, io.EOF) {
+		return n, fmt.Errorf("can not read bytes %q : %w", p, err)
 	}
 
 	return
 }
 
-//NewRot13Reader creates a new Reader using rot13 algorithm
+// NewRot13Reader creates a new Reader using rot13 algorithm
 func NewRot13Reader(reader io.Reader) *Reader {
 	return &Reader{reader, rot13}
 }
 
-//NewAtBashReader creates a new Reader using atbash algorithm
+// NewAtBashReader creates a new Reader using atbash algorithm
 func NewAtBashReader(reader io.Reader) *Reader {
 	return &Reader{reader, atbash}
 }
